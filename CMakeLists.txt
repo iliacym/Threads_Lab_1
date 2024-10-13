@@ -13,3 +13,5 @@ add_executable(
         src/Task3/task3.c
         src/Task3/task3.h
 )
+
+target_link_libraries(Thread_Lab_1 m)
