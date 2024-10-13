@@ -13,7 +13,7 @@ int TASK2_MAX_ITER = 20000;
 int CURR_STEP;
 int MAX_STEP;
 pthread_mutex_t mutex_bar, mutex_file;
-FILE *file;
+FILE* file;
 int const buff_size = 256 * 1024;
 
 typedef struct TASK2_POINT {
@@ -22,16 +22,16 @@ typedef struct TASK2_POINT {
 
 typedef struct TASK2_POINTS {
     int num_points;
-    TASK2_POINT **points;
+    TASK2_POINT** points;
 } TASK2_POINTS;
 
 typedef struct DATA {
     int rank, threads;
-    TASK2_POINTS *points;
+    TASK2_POINTS* points;
 } DATA;
 
-TASK2_POINTS *create_points(int const num_points) {
-    TASK2_POINTS *points = calloc(1, sizeof(TASK2_POINTS));
+TASK2_POINTS* create_points(int const num_points) {
+    TASK2_POINTS* points = calloc(1, sizeof(TASK2_POINTS));
     points->num_points = num_points;
     points->points = calloc(num_points, sizeof(TASK2_POINT));
 
@@ -42,7 +42,7 @@ TASK2_POINTS *create_points(int const num_points) {
     return points;
 }
 
-void delete_points(TASK2_POINTS *points) {
+void delete_points(TASK2_POINTS* points) {
     for (int i = 0; i < points->num_points; ++i) {
         free(points->points[i]);
     }
@@ -51,12 +51,12 @@ void delete_points(TASK2_POINTS *points) {
     free(points);
 }
 
-void get_points(TASK2_POINTS const *points) {
+void get_points(TASK2_POINTS const* points) {
     srand(time(0));
 
     for (int i = 0; i < points->num_points; ++i) {
-        double const radius = sqrt((double) rand() / RAND_MAX) * TASK2_R;
-        double const angle = (double) rand() / RAND_MAX * 2 * M_PI;
+        double const radius = sqrt((double)rand() / RAND_MAX) * TASK2_R;
+        double const angle = (double)rand() / RAND_MAX * 2 * M_PI;
 
         double const x = radius * cos(angle), y = radius * sin(angle);
 
@@ -65,11 +65,11 @@ void get_points(TASK2_POINTS const *points) {
     }
 }
 
-double sqr(TASK2_POINT const *p) {
+double sqr(TASK2_POINT const* p) {
     return p->x * p->x + p->y * p->y;
 }
 
-double l2(TASK2_POINT const *p1, TASK2_POINT const *p2) {
+double l2(TASK2_POINT const* p1, TASK2_POINT const* p2) {
     TASK2_POINT point;
 
     point.x = p2->x - p1->x;
@@ -79,18 +79,18 @@ double l2(TASK2_POINT const *p1, TASK2_POINT const *p2) {
 }
 
 
-void *mandelbrot_set(void *raw_data) {
-    DATA const data = *(DATA *) raw_data;
-    TASK2_POINTS const *points = data.points;
+void* mandelbrot_set(void* raw_data) {
+    DATA const data = *(DATA*)raw_data;
+    TASK2_POINTS const* points = data.points;
     int const threads = data.threads, rank = data.rank;
 
     int const num_points = points->num_points,
-            start = num_points / threads * rank,
-            end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);
+              start = num_points / threads * rank,
+              end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);
 
     for (int i = start; i < end; ++i) {
         TASK2_POINT *point = points->points[i],
-                start_point;
+                    start_point;
 
         start_point.x = point->x;
         start_point.y = point->y;
@@ -114,7 +114,7 @@ void *mandelbrot_set(void *raw_data) {
                 break;
             }
         }
-        point->color = (double) iter / TASK2_MAX_ITER;
+        point->color = (double)iter / TASK2_MAX_ITER;
 
         pthread_mutex_lock(&mutex_bar);
         ++CURR_STEP;
@@ -124,7 +124,7 @@ void *mandelbrot_set(void *raw_data) {
     return NULL;
 }
 
-void *progress(void *i) {
+void* progress(void* i) {
     while (1) {
         pthread_mutex_lock(&mutex_bar);
         int const step = CURR_STEP;
@@ -135,26 +135,95 @@ void *progress(void *i) {
             break;
         }
 
-        printf("\r%.0lf%%", (double) step / MAX_STEP * 100);
+        printf("\r%.0lf%%", (double)step / MAX_STEP * 100);
         usleep(200000);
     }
 
     return NULL;
 }
 
-void *write_file(void *raw_data) {
-    DATA const data = *(DATA *) raw_data;
-    TASK2_POINTS const *points = data.points;
+int int_to_str(long long int number, char* tmp) {
+    int i = 0;
+
+    do {
+        tmp[i++] = '0' + (char)(number % 10);
+        number /= 10;
+    }
+    while (number != 0);
+
+    for (int j = 0; j < i / 2; j++) {
+        char const temp = tmp[j];
+        tmp[j] = tmp[i - j - 1];
+        tmp[i - j - 1] = temp;
+    }
+
+    return i;
+}
+
+int double_to_str(double const number, char* tmp) {
+    double exp = floor(log10(fabs(number)));
+    if (isinf(exp)) {
+        exp = 0;
+    }
+
+    double normalized_number = fabs(number) * pow(10, -exp);
+    int last_index = 0;
+
+    if (number < 0) {
+        tmp[last_index++] = '-';
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        if (i != 1) {
+            int const int_part = (int)normalized_number;
+
+            normalized_number -= int_part;
+            normalized_number *= 10;
+
+            tmp[last_index] = '0' + (char)int_part;
+        }
+        else {
+            tmp[last_index] = '.';
+        }
+
+        ++last_index;
+    }
+
+    tmp[last_index++] = 'e';
+    if (exp >= 0) {
+        tmp[last_index++] = '+';
+    }
+    else {
+        tmp[last_index++] = '-';
+    }
+
+    int const int_exp = (int)fabs(exp);
+
+    last_index += int_to_str(int_exp, tmp + last_index);
+    tmp[last_index] = '\0';
+
+    return last_index;
+}
+
+void* write_file(void* raw_data) {
+    DATA const data = *(DATA*)raw_data;
+    TASK2_POINTS const* points = data.points;
     int const threads = data.threads, rank = data.rank;
     int const num_points = points->num_points,
-            start = num_points / threads * rank,
-            end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);;
+              start = num_points / threads * rank,
+              end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);;
 
 
-    char *buffer = calloc(buff_size, sizeof(char)), tmp[100];
+    char *buffer = calloc(buff_size, sizeof(char)), tmp[100] = {0};
     int curr_pos = 0;
     for (int i = start; i < end; ++i) {
-        int const str_len = sprintf(tmp, "%e;%e;%e\n", points->points[i]->x, points->points[i]->y, points->points[i]->color);
+        // int const str_len = sprintf(tmp, "%e;%e;%e\n", points->points[i]->x, points->points[i]->y, points->points[i]->color);
+        int str_len = double_to_str(points->points[i]->x, tmp);
+        tmp[str_len++] = ';';
+        str_len += double_to_str(points->points[i]->y, tmp + str_len);
+        tmp[str_len++] = ';';
+        str_len += double_to_str(points->points[i]->color, tmp + str_len);
+        tmp[str_len++] = '\n';
 
         if (curr_pos + str_len >= buff_size) {
             pthread_mutex_lock(&mutex_file);
@@ -181,12 +250,12 @@ void *write_file(void *raw_data) {
     free(buffer);
 }
 
-void TASK2_run(int const num_points, int num_threads) {
-    TASK2_POINTS *points = create_points(num_points);
+void TASK2_run(int const num_points, int const num_threads) {
+    TASK2_POINTS* points = create_points(num_points);
     get_points(points);
 
-    pthread_t *threads = calloc(num_threads + 1, sizeof(pthread_t));
-    DATA *data = calloc(num_threads, sizeof(DATA));
+    pthread_t* threads = calloc(num_threads + 1, sizeof(pthread_t));
+    DATA* data = calloc(num_threads, sizeof(DATA));
 
     CURR_STEP = 0;
     MAX_STEP = num_points;
@@ -214,7 +283,6 @@ void TASK2_run(int const num_points, int num_threads) {
     setvbuf(file, NULL, _IOFBF, buff_size);
 
     printf("File progress:\n");
-    num_threads = 2;
     for (int i = 0; i < num_threads; ++i) {
         data[i].points = points;
         data[i].rank = i;
