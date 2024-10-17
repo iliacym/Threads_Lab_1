@@ -7,9 +7,8 @@
 #include <unistd.h>
 #include <string.h>
 
-double TASK2_R = 2;
-double TASK2_EPS = 1e-6;
-int TASK2_MAX_ITER = 20000;
+double screen[4] = {-2, 1, -1, 1};
+int TASK2_MAX_ITER = 1000;
 int CURR_STEP;
 int MAX_STEP;
 pthread_mutex_t mutex_bar, mutex_file;
@@ -52,32 +51,26 @@ void delete_points(TASK2_POINTS* points) {
 }
 
 void get_points(TASK2_POINTS const* points) {
-    srand(time(0));
-
-    for (int i = 0; i < points->num_points; ++i) {
-        double const radius = sqrt((double)rand() / RAND_MAX) * TASK2_R;
-        double const angle = (double)rand() / RAND_MAX * 2 * M_PI;
-
-        double const x = radius * cos(angle), y = radius * sin(angle);
-
-        points->points[i]->x = x;
-        points->points[i]->y = y;
+    double const wight = screen[1] - screen[0], height = screen[3] - screen[2];
+    int const ppx = (int) sqrt(points->num_points * wight / height), ppy = (int) sqrt(points->num_points * height / wight);
+    double const step_x = wight / (ppx - 1), step_y = height / (ppy - 1);
+    double x = screen[0];
+    int i = 0;
+    while (x <= screen[1]) {
+        double y = screen[2];
+        while (y <= screen[3]) {
+            points->points[i]->x = x;
+            points->points[i]->y = y;
+            ++i;
+            y += step_y;
+        }
+        x += step_x;
     }
 }
 
 double sqr(TASK2_POINT const* p) {
     return p->x * p->x + p->y * p->y;
 }
-
-double l2(TASK2_POINT const* p1, TASK2_POINT const* p2) {
-    TASK2_POINT point;
-
-    point.x = p2->x - p1->x;
-    point.y = p2->y - p1->y;
-
-    return sqrt(sqr(&point));
-}
-
 
 void* mandelbrot_set(void* raw_data) {
     DATA const data = *(DATA*)raw_data;
@@ -105,14 +98,11 @@ void* mandelbrot_set(void* raw_data) {
             point->x = point->x * point->x + start_point.x - point->y * point->y;
             point->y = 2 * prev_point.x * point->y + start_point.y;
 
-            if (sqr(point) >= TASK2_R * TASK2_R) {
+            if (sqr(point) > 4) {
                 iter = TASK2_MAX_ITER - 1 - j;
                 break;
             }
 
-            if (l2(&prev_point, point) <= TASK2_EPS) {
-                break;
-            }
         }
         point->color = (double)iter / TASK2_MAX_ITER;
 
