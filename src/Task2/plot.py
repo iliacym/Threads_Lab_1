@@ -1,29 +1,73 @@
 from PIL import Image
 import numpy as np
-from tqdm import tqdm
+import tqdm
+import numba as nb
+import multiprocessing
 
-colors = {0: (0, 0, 0), 1: (0, 0, 102), 2: (0, 0, 255), 3: (0, 255, 255), 4: (0, 255, 0), 5: (255, 255, 255)}
+BASE_PATH = '../../cmake-build-release/'
+
+
+@nb.njit(fastmath=True)
+def hsv_to_rgb(h):
+    h = h * 6
+    i = int(h) % 6
+    f = h - i
+    p = 0.4
+    v = 1
+    q = (1 - f * 0.6)
+    t = (1 - (1 - f) * 0.6)
+
+    if i == 0:
+        r, g, b = v, t, p
+    elif i == 1:
+        r, g, b = q, v, p
+    elif i == 2:
+        r, g, b = p, v, t
+    elif i == 3:
+        r, g, b = p, q, v
+    elif i == 4:
+        r, g, b = t, p, v
+    else:
+        r, g, b = v, p, q
+
+    return r, g, b
+
 
 
 def get_color(z):
-    return colors[(z * 1000 + 35) // 200]
+    if z == 0:
+        return 0, 0, 0
+    elif z > 0.97:
+        return 255, 255, 255
+    else:
+        return tuple(int(i * 255) for i in hsv_to_rgb(z))
 
-def plot(img, arr):
-    for row in tqdm(arr):
-        img.putpixel((int(row[0]), int(row[1])), get_color(row[2]))
 
-    return img
+def plot(args) -> np.ndarray:
+    thread, ppx, ppy = args
+    arr = np.zeros((ppy, ppx, 3), dtype=np.uint8)
+
+    with open(f'{BASE_PATH}/task2_coords_{thread}.csv') as file:
+        points = int(file.readline())
+
+        for line in tqdm.tqdm(file, leave=False, total=points, position=thread):
+            x, y, color = line.split(';')
+
+            arr[int(y), int(x)] = get_color(float(color))
+
+    return arr
 
 
 def main():
-    with open('../../cmake-build-release/task2_coords.csv') as file:
-        n, *size = list(map(int, file.readline().strip().split(';')))
+    with open(f'{BASE_PATH}/task2_coords_info.csv') as file:
+        num_points, *size, threads = map(int, file.readline().strip().split(';'))
 
-    arr = np.loadtxt('../../cmake-build-release/task2_coords.csv', skiprows=1, delimiter=';', dtype=float)
+    with multiprocessing.Pool(processes=threads) as pool:
+        results = pool.map(plot, [(i, *size) for i in range(threads)])
 
-    image = Image.new('RGB', size, (255, 255, 255))
+    image_np = sum(results)
 
-    image = plot(image, arr)
+    image = Image.fromarray(image_np, 'RGB')
 
     image.save('png.png')
     image.show()
