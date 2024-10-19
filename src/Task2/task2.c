@@ -1,27 +1,30 @@
 #include "task2.h"
 #include <stdlib.h>
-#include <time.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
 
-double screen[4] = {-2, 1, -1, 1};
-int TASK2_MAX_ITER = 1000;
-int CURR_STEP;
-int MAX_STEP;
+double screen[4] = {-0.98232664, -0.98221287, 0.273179757, 0.273266522};
+int TASK2_MAX_ITER = 1000, CURR_STEP, MAX_STEP, PPX, PPY;
+int TASK2_SAVE_COORDS = 1;
+int TASK2_SAVE_POINTS = 0;
+int write_mode = 0;
+
 pthread_mutex_t mutex_bar, mutex_file;
 FILE* file;
 int const buff_size = 256 * 1024;
 
 typedef struct TASK2_POINT {
-    double x, y, color;
+    double x, y;
+    int color;
 } TASK2_POINT;
 
 typedef struct TASK2_POINTS {
     int num_points;
     TASK2_POINT** points;
+    TASK2_POINT** coords;
 } TASK2_POINTS;
 
 typedef struct DATA {
@@ -32,10 +35,12 @@ typedef struct DATA {
 TASK2_POINTS* create_points(int const num_points) {
     TASK2_POINTS* points = calloc(1, sizeof(TASK2_POINTS));
     points->num_points = num_points;
-    points->points = calloc(num_points, sizeof(TASK2_POINT));
 
+    points->points = calloc(num_points, sizeof(TASK2_POINT));
+    points->coords = calloc(num_points, sizeof(TASK2_POINT));
     for (int i = 0; i < num_points; ++i) {
         points->points[i] = calloc(1, sizeof(TASK2_POINT));
+        points->coords[i] = calloc(1, sizeof(TASK2_POINT));
     }
 
     return points;
@@ -51,21 +56,32 @@ void delete_points(TASK2_POINTS* points) {
 }
 
 void get_points(TASK2_POINTS const* points) {
-    double const wight = screen[1] - screen[0], height = screen[3] - screen[2];
-    int const ppx = (int) sqrt(points->num_points * wight / height), ppy = (int) sqrt(points->num_points * height / wight);
+    double const wight = screen[1] - screen[0], height = screen[3] - screen[2], mid_x = screen[0], mid_y = screen[2];
+    int const ppx = (int)sqrt(points->num_points * wight / height), ppy = (int)
+                  sqrt(points->num_points * height / wight);
     double const step_x = wight / (ppx - 1), step_y = height / (ppy - 1);
-    double x = screen[0];
-    int i = 0;
-    while (x <= screen[1]) {
-        double y = screen[2];
-        while (y <= screen[3]) {
+    int i = 0, x_it = 0;
+
+    while (x_it < ppx) {
+        int y_it = 0;
+        double const x = screen[0] + step_x * x_it;
+        while (y_it < ppy) {
+            double const y = screen[2] + step_y * y_it;
             points->points[i]->x = x;
             points->points[i]->y = y;
+            points->coords[i]->x = x_it;
+            points->coords[i]->y = y_it++;
             ++i;
-            y += step_y;
         }
-        x += step_x;
+        ++x_it;
     }
+    for (int j = i; j < points->num_points; ++j) {
+        points->points[j]->x = mid_x;
+        points->points[j]->y = mid_y;
+    }
+
+    PPX = ppx;
+    PPY = ppy;
 }
 
 double sqr(TASK2_POINT const* p) {
@@ -102,9 +118,11 @@ void* mandelbrot_set(void* raw_data) {
                 iter = TASK2_MAX_ITER - 1 - j;
                 break;
             }
-
         }
-        point->color = (double)iter / TASK2_MAX_ITER;
+
+        point->color = iter;
+        point->x = start_point.x;
+        point->y = start_point.y;
 
         pthread_mutex_lock(&mutex_bar);
         ++CURR_STEP;
@@ -163,7 +181,7 @@ int double_to_str(double const number, char* tmp) {
         tmp[last_index++] = '-';
     }
 
-    for (int i = 0; i < 8; ++i) {
+    for (int i = 0; i < 10; ++i) {
         if (i != 1) {
             int const int_part = (int)normalized_number;
 
@@ -201,19 +219,29 @@ void* write_file(void* raw_data) {
     int const threads = data.threads, rank = data.rank;
     int const num_points = points->num_points,
               start = num_points / threads * rank,
-              end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);;
+              end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);
 
 
     char *buffer = calloc(buff_size, sizeof(char)), tmp[100] = {0};
     int curr_pos = 0;
     for (int i = start; i < end; ++i) {
-        // int const str_len = sprintf(tmp, "%e;%e;%e\n", points->points[i]->x, points->points[i]->y, points->points[i]->color);
-        int str_len = double_to_str(points->points[i]->x, tmp);
-        tmp[str_len++] = ';';
-        str_len += double_to_str(points->points[i]->y, tmp + str_len);
-        tmp[str_len++] = ';';
-        str_len += double_to_str(points->points[i]->color, tmp + str_len);
-        tmp[str_len++] = '\n';
+        int str_len = 0;
+        if (write_mode == 0) {
+            if (points->points[i]->color == 0) {
+                str_len = double_to_str(points->points[i]->x, tmp);
+                tmp[str_len++] = ';';
+                str_len += double_to_str(points->points[i]->y, tmp + str_len);
+                tmp[str_len++] = '\n';
+            }
+        }
+        else {
+            str_len = int_to_str((int)round(points->coords[i]->x), tmp);
+            tmp[str_len++] = ';';
+            str_len += int_to_str((int)round(points->coords[i]->y), tmp + str_len);
+            tmp[str_len++] = ';';
+            str_len += double_to_str((double)points->points[i]->color / TASK2_MAX_ITER, tmp + str_len);
+            tmp[str_len++] = '\n';
+        }
 
         if (curr_pos + str_len >= buff_size) {
             pthread_mutex_lock(&mutex_file);
@@ -223,8 +251,10 @@ void* write_file(void* raw_data) {
             curr_pos = 0;
         }
 
-        memcpy(buffer + curr_pos, tmp, str_len);
-        curr_pos += str_len;
+        if (str_len != 0) {
+            memcpy(buffer + curr_pos, tmp, str_len);
+            curr_pos += str_len;
+        }
 
         pthread_mutex_lock(&mutex_bar);
         ++CURR_STEP;
@@ -251,6 +281,7 @@ void TASK2_run(int const num_points, int const num_threads) {
     MAX_STEP = num_points;
     pthread_mutex_init(&mutex_bar, NULL);
     pthread_mutex_init(&mutex_file, NULL);
+
     printf("Mandelbrot Progress:\n");
 
     for (int i = 0; i < num_threads; ++i) {
@@ -264,31 +295,60 @@ void TASK2_run(int const num_points, int const num_threads) {
     pthread_create(&threads[num_threads], NULL, progress, NULL);
 
     for (int i = 0; i < num_threads; ++i) {
-        pthread_join(threads[i], NULL);
+        pthread_detach(threads[i]);
     }
     pthread_join(threads[num_threads], NULL);
     printf("Mandelbrot Completed\n");
 
-    file = fopen("task2_results.csv", "w");
-    setvbuf(file, NULL, _IOFBF, buff_size);
 
-    printf("File progress:\n");
-    for (int i = 0; i < num_threads; ++i) {
-        data[i].points = points;
-        data[i].rank = i;
-        data[i].threads = num_threads;
+    if (TASK2_SAVE_POINTS != 0) {
+        file = fopen("task2_points.csv", "wb");
+        setvbuf(file, NULL, _IOFBF, buff_size);
 
-        pthread_create(&threads[i], NULL, write_file, &data[i]);
+        printf("Points file progress:\n");
+        CURR_STEP = 0;
+        for (int i = 0; i < num_threads; ++i) {
+            data[i].points = points;
+            data[i].rank = i;
+            data[i].threads = num_threads;
+
+            pthread_create(&threads[i], NULL, write_file, &data[i]);
+        }
+        pthread_create(&threads[num_threads], NULL, progress, NULL);
+
+        for (int i = 0; i < num_threads; ++i) {
+            pthread_detach(threads[i]);
+        }
+        pthread_join(threads[num_threads], NULL);
+
+        printf("Points file completed\n");
     }
-    CURR_STEP = 0;
-    pthread_create(&threads[num_threads], NULL, progress, NULL);
 
-    for (int i = 0; i < num_threads; ++i) {
-        pthread_join(threads[i], NULL);
+    if (TASK2_SAVE_COORDS != 0) {
+        write_mode = 1;
+        file = fopen("task2_coords.csv", "wb");
+        setvbuf(file, NULL, _IOFBF, buff_size);
+
+        fprintf(file, "%d;%d;%d\n", num_points, PPX, PPY);
+
+        printf("Coords file progress:\n");
+        CURR_STEP = 0;
+        for (int i = 0; i < num_threads; ++i) {
+            data[i].points = points;
+            data[i].rank = i;
+            data[i].threads = num_threads;
+
+            pthread_create(&threads[i], NULL, write_file, &data[i]);
+        }
+        pthread_create(&threads[num_threads], NULL, progress, NULL);
+
+        for (int i = 0; i < num_threads; ++i) {
+            pthread_detach(threads[i]);
+        }
+        pthread_join(threads[num_threads], NULL);
+
+        printf("Coords file completed\n");
     }
-    pthread_join(threads[num_threads], NULL);
-
-    printf("File completed\n");
 
     pthread_mutex_destroy(&mutex_file);
     pthread_mutex_destroy(&mutex_bar);
