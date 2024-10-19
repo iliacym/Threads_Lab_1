@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 
-double screen[4] = {-0.98232664, -0.98221287, 0.273179757, 0.273266522};
+double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705};
 int TASK2_MAX_ITER = 1000, CURR_STEP, MAX_STEP, PPX, PPY;
 int TASK2_SAVE_COORDS = 1;
 int TASK2_SAVE_POINTS = 0;
@@ -21,10 +21,14 @@ typedef struct TASK2_POINT {
     int color;
 } TASK2_POINT;
 
+typedef struct TASK2_COORD_POINT {
+    int x, y;
+} TASK2_COORD_POINT;
+
 typedef struct TASK2_POINTS {
     int num_points;
     TASK2_POINT** points;
-    TASK2_POINT** coords;
+    TASK2_COORD_POINT** coords;
 } TASK2_POINTS;
 
 typedef struct DATA {
@@ -36,11 +40,11 @@ TASK2_POINTS* create_points(int const num_points) {
     TASK2_POINTS* points = calloc(1, sizeof(TASK2_POINTS));
     points->num_points = num_points;
 
-    points->points = calloc(num_points, sizeof(TASK2_POINT));
-    points->coords = calloc(num_points, sizeof(TASK2_POINT));
+    points->points = calloc(num_points, sizeof(TASK2_POINT*));
+    points->coords = calloc(num_points, sizeof(TASK2_COORD_POINT*));
     for (int i = 0; i < num_points; ++i) {
         points->points[i] = calloc(1, sizeof(TASK2_POINT));
-        points->coords[i] = calloc(1, sizeof(TASK2_POINT));
+        points->coords[i] = calloc(1, sizeof(TASK2_COORD_POINT));
     }
 
     return points;
@@ -49,9 +53,11 @@ TASK2_POINTS* create_points(int const num_points) {
 void delete_points(TASK2_POINTS* points) {
     for (int i = 0; i < points->num_points; ++i) {
         free(points->points[i]);
+        free(points->coords[i]);
     }
 
     free(points->points);
+    free(points->coords);
     free(points);
 }
 
