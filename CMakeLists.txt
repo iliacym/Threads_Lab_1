@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.2)
 project(Thread_Lab_1)
 
 set(CMAKE_C_STANDARD 11)
-
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_definitions(-DLINUX)
+endif ()
 add_executable(
         Thread_Lab_1 main.c
         src/Task1/task1.c

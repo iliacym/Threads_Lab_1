@@ -7,8 +7,6 @@ import cv2
 import time
 import threading
 
-BASE_PATH = '../../cmake-build-release/results/'
-
 
 @nb.njit(fastmath=True)
 def hsv_to_rgb(h):
@@ -118,11 +116,13 @@ def main():
 
     t.join()
 
-    cv2.imwrite('png.png', image_np)
+    cv2.imwrite('../../res/png.png', image_np)
 
     shm.close()
     shm.unlink()
 
+
+BASE_PATH = '../../cmake-build-release/results/'
 
 if __name__ == '__main__':
     main()

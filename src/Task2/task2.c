@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/stat.h>
 
 double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705}; //star
 // double screen[4] = {-2, 1, -1, 1}; //default
@@ -37,12 +38,12 @@ typedef struct DATA {
     TASK2_POINTS *points;
 } DATA;
 
-TASK2_POINTS* create_points(unsigned long int const num_points) {
+TASK2_POINTS *create_points(unsigned long int const num_points) {
     TASK2_POINTS *points = calloc(1, sizeof(TASK2_POINTS));
     points->num_points = num_points;
 
-    points->points = calloc(num_points, sizeof(TASK2_POINT*));
-    points->coords = calloc(num_points, sizeof(TASK2_COORD_POINT*));
+    points->points = calloc(num_points, sizeof(TASK2_POINT *));
+    points->coords = calloc(num_points, sizeof(TASK2_COORD_POINT *));
     for (unsigned long int i = 0; i < num_points; ++i) {
         points->points[i] = calloc(1, sizeof(TASK2_POINT));
         points->coords[i] = calloc(1, sizeof(TASK2_COORD_POINT));
@@ -64,8 +65,8 @@ void delete_points(TASK2_POINTS *points) {
 
 void get_ppxy(unsigned long int const num_points) {
     double const wight = screen[1] - screen[0], height = screen[3] - screen[2];
-    unsigned long int const ppx = (unsigned long long int)sqrt(num_points * wight / height),
-                            ppy = (unsigned long long int)sqrt(num_points * height / wight);
+    unsigned long int const ppx = (unsigned long long int) sqrt(num_points * wight / height),
+            ppy = (unsigned long long int) sqrt(num_points * height / wight);
 
     PPX = ppx;
     PPY = ppy;
@@ -78,8 +79,8 @@ void get_points(TASK2_POINTS const *points,
                 unsigned long int const points_limit,
                 unsigned long int const num_points) {
     double const wight = screen[1] - screen[0], height = screen[3] - screen[2], mid_x = screen[0], mid_y = screen[2];
-    unsigned long int const ppx = (unsigned long long int)sqrt(num_points * wight / height),
-                            ppy = (unsigned long long int)sqrt(num_points * height / wight);
+    unsigned long int const ppx = (unsigned long long int) sqrt(num_points * wight / height),
+            ppy = (unsigned long long int) sqrt(num_points * height / wight);
     double const step_x = wight / (ppx - 1), step_y = height / (ppy - 1);
     unsigned long int i = 0;
 
@@ -112,18 +113,18 @@ double sqr(TASK2_POINT const *p) {
     return p->x * p->x + p->y * p->y;
 }
 
-void* mandelbrot_set(void *raw_data) {
-    DATA const data = *(DATA*)raw_data;
+void *mandelbrot_set(void *raw_data) {
+    DATA const data = *(DATA *) raw_data;
     TASK2_POINTS const *points = data.points;
     unsigned long int const threads = data.threads, rank = data.rank;
 
     unsigned long int const num_points = points->num_points,
-                            start = num_points / threads * rank,
-                            end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);
+            start = num_points / threads * rank,
+            end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1);
 
     for (unsigned long int i = start; i < end; ++i) {
         TASK2_POINT *point = points->points[i],
-                    start_point;
+                start_point;
 
         start_point.x = point->x;
         start_point.y = point->y;
@@ -156,7 +157,7 @@ void* mandelbrot_set(void *raw_data) {
     return NULL;
 }
 
-void* progress(void *i) {
+void *progress(void *i) {
     while (1) {
         pthread_mutex_lock(&mutex_bar);
         unsigned long int const step = CURR_STEP;
@@ -167,7 +168,7 @@ void* progress(void *i) {
             break;
         }
 
-        printf("\r%.0lf%%", (double)step / MAX_STEP * 100);
+        printf("\r%.0lf%%", (double) step / MAX_STEP * 100);
         usleep(200000);
     }
 
@@ -178,7 +179,7 @@ int int_to_str(long long int number, char *tmp) {
     int i = 0;
 
     do {
-        tmp[i++] = '0' + (char)(number % 10);
+        tmp[i++] = '0' + (char) (number % 10);
         number /= 10;
     } while (number != 0);
 
@@ -206,12 +207,12 @@ int double_to_str(double const number, char *tmp) {
 
     for (int i = 0; i < 10; ++i) {
         if (i != 1) {
-            int const int_part = (int)normalized_number;
+            int const int_part = (int) normalized_number;
 
             normalized_number -= int_part;
             normalized_number *= 10;
 
-            tmp[last_index] = '0' + (char)int_part;
+            tmp[last_index] = '0' + (char) int_part;
         } else {
             tmp[last_index] = '.';
         }
@@ -226,7 +227,7 @@ int double_to_str(double const number, char *tmp) {
         tmp[last_index++] = '-';
     }
 
-    int const int_exp = (int)fabs(exp);
+    int const int_exp = (int) fabs(exp);
 
     last_index += int_to_str(int_exp, tmp + last_index);
     tmp[last_index] = '\0';
@@ -234,14 +235,14 @@ int double_to_str(double const number, char *tmp) {
     return last_index;
 }
 
-void* write_file(void *raw_data) {
-    DATA const data = *(DATA*)raw_data;
+void *write_file(void *raw_data) {
+    DATA const data = *(DATA *) raw_data;
     TASK2_POINTS const *points = data.points;
     unsigned long int const threads = data.threads, rank = data.rank;
     unsigned long int const num_points = points->num_points,
-                            start = num_points / threads * rank,
-                            end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1),
-                            file_number = data.file_number;
+            start = num_points / threads * rank,
+            end = rank == threads - 1 ? num_points : num_points / threads * (rank + 1),
+            file_number = data.file_number;
 
     char file_name[100];
     sprintf(file_name, "results/task2_coords_%ld.csv", file_number);
@@ -254,11 +255,11 @@ void* write_file(void *raw_data) {
     for (unsigned long int i = start; i < end; ++i) {
         int str_len = 0;
 
-        str_len = int_to_str((unsigned long int)round(points->coords[i]->x), tmp);
+        str_len = int_to_str((unsigned long int) round(points->coords[i]->x), tmp);
         tmp[str_len++] = ';';
-        str_len += int_to_str((unsigned long int)round(points->coords[i]->y), tmp + str_len);
+        str_len += int_to_str((unsigned long int) round(points->coords[i]->y), tmp + str_len);
         tmp[str_len++] = ';';
-        str_len += double_to_str((double)points->points[i]->color / (TASK2_MAX_ITER - 1), tmp + str_len);
+        str_len += double_to_str((double) points->points[i]->color / (TASK2_MAX_ITER - 1), tmp + str_len);
         tmp[str_len++] = '\n';
 
         if (curr_pos + str_len >= buff_size) {
@@ -293,6 +294,12 @@ void* write_file(void *raw_data) {
 void TASK2_run(unsigned long int const num_points,
                unsigned long int const batch_size,
                int const num_threads) {
+#ifdef LINUX
+    mkdir("results", 0777);
+#else
+    mkdir("results");
+#endif
+
     TASK2_POINTS *points = create_points(batch_size);
     get_ppxy(num_points);
 
@@ -310,7 +317,7 @@ void TASK2_run(unsigned long int const num_points,
         ++batch_count;
     }
 
-    fprintf(file, "%ld;%d;%d;%d\n", num_points, PPX, PPY, batch_count * num_threads);
+    fprintf(file, "%ld;%ld;%ld;%ld\n", num_points, PPX, PPY, batch_count * num_threads);
     fclose(file);
 
     for (unsigned long int i = 0; i < batch_count; ++i) {
