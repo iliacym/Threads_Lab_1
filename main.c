@@ -7,6 +7,6 @@
 
 
 int main() {
-    TASK2_run(200000000, 11);
+    TASK2_run(400000000, 12);
     return 0;
 }

@@ -1,8 +1,9 @@
-from PIL import Image
 import numpy as np
 import tqdm
 import numba as nb
 import multiprocessing
+from multiprocessing import shared_memory
+import cv2
 
 BASE_PATH = '../../cmake-build-release/'
 
@@ -30,8 +31,7 @@ def hsv_to_rgb(h):
     else:
         r, g, b = v, p, q
 
-    return r, g, b
-
+    return b, g, r
 
 
 def get_color(z):
@@ -43,34 +43,56 @@ def get_color(z):
         return tuple(int(i * 255) for i in hsv_to_rgb(z))
 
 
-def plot(args) -> np.ndarray:
-    thread, ppx, ppy = args
-    arr = np.zeros((ppy, ppx, 3), dtype=np.uint8)
+def init(lock_):
+    global lock
+    lock = lock_
+
+
+def plot(args):
+    thread, ppx, ppy, shared_name = args
+
+    shm = shared_memory.SharedMemory(name=shared_name)
+    arr = np.ndarray((ppy, ppx, 3), dtype=np.uint8, buffer=shm.buf)
 
     with open(f'{BASE_PATH}/task2_coords_{thread}.csv') as file:
         points = int(file.readline())
 
-        for line in tqdm.tqdm(file, leave=False, total=points, position=thread):
-            x, y, color = line.split(';')
+        with lock:
+            progress_bar = tqdm.tqdm(desc=f'Process: {thread}', leave=False, total=points, position=thread)
 
+        i = 0
+        for line in file:
+            x, y, color = line.split(';')
             arr[int(y), int(x)] = get_color(float(color))
 
-    return arr
+            i += 1
+            if i % 1000 == 0:
+                with lock:
+                    progress_bar.update(1000)
+
+        with lock:
+            progress_bar.close()
+
+    shm.close()
 
 
 def main():
     with open(f'{BASE_PATH}/task2_coords_info.csv') as file:
         num_points, *size, threads = map(int, file.readline().strip().split(';'))
 
-    with multiprocessing.Pool(processes=threads) as pool:
-        results = pool.map(plot, [(i, *size) for i in range(threads)])
+    shape = (*(size[::-1]), 3)
 
-    image_np = sum(results)
+    shm = shared_memory.SharedMemory(create=True, size=int(np.prod(shape)) * np.dtype(np.uint8).itemsize)
+    image_np = np.ndarray(shape, dtype=np.uint8, buffer=shm.buf)
+    lock = multiprocessing.Lock()
 
-    image = Image.fromarray(image_np, 'RGB')
+    with multiprocessing.Pool(processes=threads, initargs=(lock,), initializer=init) as pool:
+        pool.map(plot, [(i, *size, shm.name) for i in range(threads)])
 
-    image.save('png.png')
-    image.show()
+    cv2.imwrite('png.png', image_np)
+
+    shm.close()
+    shm.unlink()
 
 
 if __name__ == '__main__':

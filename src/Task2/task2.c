@@ -6,13 +6,13 @@
 #include <unistd.h>
 #include <string.h>
 
-double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705}; //star
-// double screen[4] = {-2, 1, -1, 1}; //default
-// double screen[4] = {0.335590236, 0.335767595, -0.38698134, -0.38681068}; //sun 1000
+// double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705}; //star
+double screen[4] = {-2, 1, -1, 1}; //default
+// double screen[4] = {0.335590236, 0.335767595, -0.38698134, -0.38681068}; //sun 1000 +0.15
 // double screen[4] = {-0.8116076793, -0.8116060273, 0.18460990711, 0.18461113012}; //shima 1600
-// double screen[4] = {-0.81405528322, -0.81405516201,  0.189598755165, 0.189598844697};//neuron 1600
-// double screen[4] = {-0.109314378533, -0.109314351037,  0.8950811785628, 0.8950812006340};//virus 1600
-int TASK2_MAX_ITER = 4000, CURR_STEP, MAX_STEP, PPX, PPY;
+// double screen[4] = {-0.81405528322, -0.81405516201,  0.189598755165, 0.189598844697};//neuron 1600 +0.35
+// double screen[4] = {-0.109314378533, -0.109314351037,  0.8950811785628, 0.8950812006340};//virus 1600 +0.35
+int TASK2_MAX_ITER = 1000, CURR_STEP, MAX_STEP, PPX, PPY;
 
 pthread_mutex_t mutex_bar, mutex_file;
 int const buff_size = 256 * 1024;
