@@ -14,8 +14,8 @@ add_executable(
         src/Task3/task3.c
         src/Task3/task3.h
 #        src/Task3/pth_ll_rwl.c
-        src/Task3/my_rand.c
-        src/Task3/my_rand.h
+        src/utils/my_rand.c
+        src/utils/my_rand.h
         src/utils/timer.h
 )
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "my_rand.h"
+#include "../utils/my_rand.h"
 #include "../utils/timer.h"
 
 /* Random ints are less than MAX_KEY */
