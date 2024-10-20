@@ -4,8 +4,10 @@ import numba as nb
 import multiprocessing
 from multiprocessing import shared_memory
 import cv2
+import time
+import threading
 
-BASE_PATH = '../../cmake-build-release/'
+BASE_PATH = '../../cmake-build-release/results/'
 
 
 @nb.njit(fastmath=True)
@@ -43,22 +45,24 @@ def get_color(z):
         return tuple(int(i * 255) for i in hsv_to_rgb(z))
 
 
-def init(lock_):
-    global lock
+def init(lock_, progress_value_):
+    global lock, progress_value
     lock = lock_
+    progress_value = progress_value_
 
 
 def plot(args):
-    thread, ppx, ppy, shared_name = args
+    file_num, ppx, ppy, shared_name = args
 
     shm = shared_memory.SharedMemory(name=shared_name)
     arr = np.ndarray((ppy, ppx, 3), dtype=np.uint8, buffer=shm.buf)
 
-    with open(f'{BASE_PATH}/task2_coords_{thread}.csv') as file:
+    with open(f'{BASE_PATH}/task2_coords_{file_num}.csv') as file:
         points = int(file.readline())
 
         with lock:
-            progress_bar = tqdm.tqdm(desc=f'Process: {thread}', leave=False, total=points, position=thread)
+            progress_bar = tqdm.tqdm(desc=f'File {file_num}', leave=False, total=points,
+                                     position=multiprocessing.current_process()._identity[0] + 1)
 
         i = 0
         for line in file:
@@ -69,25 +73,50 @@ def plot(args):
             if i % 1000 == 0:
                 with lock:
                     progress_bar.update(1000)
+                    progress_value.value += 1000
 
         with lock:
             progress_bar.close()
+            progress_value.value += i % 1000
 
     shm.close()
 
 
+def print_progress(lck, value, num_points):
+    with lck:
+        progress_bar = tqdm.tqdm(desc=f'Progress', leave=False, total=num_points, position=0)
+
+    val = 0
+    while True:
+        with lck:
+            progress_bar.update(value.value - val)
+            val = value.value
+
+        time.sleep(0.01)
+
+        if val >= num_points:
+            break
+
+
 def main():
     with open(f'{BASE_PATH}/task2_coords_info.csv') as file:
-        num_points, *size, threads = map(int, file.readline().strip().split(';'))
+        num_points, *size, num_files = map(int, file.readline().strip().split(';'))
 
     shape = (*(size[::-1]), 3)
 
     shm = shared_memory.SharedMemory(create=True, size=int(np.prod(shape)) * np.dtype(np.uint8).itemsize)
+    global_progress_value = multiprocessing.Value('i', 0)
+
     image_np = np.ndarray(shape, dtype=np.uint8, buffer=shm.buf)
     lock = multiprocessing.Lock()
 
-    with multiprocessing.Pool(processes=threads, initargs=(lock,), initializer=init) as pool:
-        pool.map(plot, [(i, *size, shm.name) for i in range(threads)])
+    t = threading.Thread(target=print_progress, args=(lock, global_progress_value, num_points))
+    t.start()
+
+    with multiprocessing.Pool(initargs=(lock, global_progress_value), initializer=init) as pool:
+        pool.map(plot, [(i, *size, shm.name) for i in range(num_files)])
+
+    t.join()
 
     cv2.imwrite('png.png', image_np)
 
