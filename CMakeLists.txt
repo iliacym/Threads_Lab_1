@@ -2,9 +2,7 @@ cmake_minimum_required(VERSION 3.2)
 project(Thread_Lab_1)
 
 set(CMAKE_C_STANDARD 11)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    add_definitions(-DLINUX)
-endif ()
+
 add_executable(
         Thread_Lab_1 main.c
         src/Task1/task1.c
@@ -14,9 +12,15 @@ add_executable(
         src/Task3/task3.c
         src/Task3/task3.h
 #        src/Task3/pth_ll_rwl.c
+        src/Task3/pth_ll_rwl_my_lock.c
         src/utils/my_rand.c
         src/utils/my_rand.h
         src/utils/timer.h
 )
 
-target_link_libraries(Thread_Lab_1 m)
+#add_definitions(-DOUTPUT)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_definitions(-DLINUX)
+    target_link_libraries(Thread_Lab_1 m)
+endif ()
