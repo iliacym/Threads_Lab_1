@@ -15,7 +15,7 @@ double screen[4] = {-2, 1, -1, 1}; //default
 // double screen[4] = {-0.109314378533, -0.109314351037,  0.8950811785628, 0.8950812006340};//virus 1600 +0.35
 unsigned long int TASK2_MAX_ITER = 1000, CURR_STEP, MAX_STEP, PPX, PPY;
 
-pthread_mutex_t mutex_bar, mutex_file;
+pthread_mutex_t mutex_bar;
 int const buff_size = 256 * 1024;
 
 typedef struct TASK2_POINT {
@@ -263,9 +263,7 @@ void* write_file(void *raw_data) {
         tmp[str_len++] = '\n';
 
         if (curr_pos + str_len >= buff_size) {
-            pthread_mutex_lock(&mutex_file);
             fwrite(buffer, sizeof(char), curr_pos, file);
-            pthread_mutex_unlock(&mutex_file);
 
             curr_pos = 0;
         }
@@ -281,9 +279,7 @@ void* write_file(void *raw_data) {
     }
 
     if (curr_pos != 0) {
-        pthread_mutex_lock(&mutex_file);
         fwrite(buffer, sizeof(char), curr_pos, file);
-        pthread_mutex_unlock(&mutex_file);
     }
     fclose(file);
     free(buffer);
@@ -307,7 +303,6 @@ void TASK2_run(unsigned long int const num_points,
     DATA *data = calloc(num_threads, sizeof(DATA));
 
     pthread_mutex_init(&mutex_bar, NULL);
-    pthread_mutex_init(&mutex_file, NULL);
 
     FILE *file = fopen("results/task2_coords_info.csv", "wb");
     setvbuf(file, NULL, _IOFBF, buff_size);
@@ -374,7 +369,6 @@ void TASK2_run(unsigned long int const num_points,
         printf("File completed (Batch %ld of %ld):\n", i + 1, batch_count);
     }
 
-    pthread_mutex_destroy(&mutex_file);
     pthread_mutex_destroy(&mutex_bar);
     free(data);
     free(threads);
