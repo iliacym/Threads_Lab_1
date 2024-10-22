@@ -2,6 +2,11 @@
 #define TASK3_H
 #include "pthread.h"
 
+typedef struct out {
+    double time_example, time_my;
+    int is_equal;
+} out;
+
 typedef struct TASK3_rwlock_t {
     pthread_mutex_t mutex;
     pthread_cond_t write_ok;
@@ -20,6 +25,6 @@ int TASK3_rwlock_wrlock(TASK3_rwlock_t *rwlock);
 
 int TASK3_rwlock_unlock(TASK3_rwlock_t *rwlock);
 
-double TASK3_run(int num_threads, int inserts_in_main_, int total_ops_, double search_percent_, double insert_percent_);
+out TASK3_run(int num_threads, int inserts_in_main_, int total_ops_, double search_percent_, double insert_percent_);
 
 #endif

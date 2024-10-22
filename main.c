@@ -11,8 +11,8 @@ int main() {
 
     char option;
     unsigned long long int n_trials, n_points, batch_size;
-    int n_threads;
-    double start, finsh;
+    int n_threads, inserts_in_main, total_ops;
+    double start, finsh, search_percent, insert_percent;
 
     printf("-----------------------------\n");
     printf("| THREAD LAB1 WELCOMES YOU! |\n");
@@ -100,9 +100,12 @@ int main() {
                     scanf("%Lf %Lf %Lf %Lf", &x0, &x1, &y0, &y1);
                     getchar();
 
-                    TASK2_set_borders(x0, x1, y0, y1);
-
-                    break;
+                    if (x0 < x1 && y0 < y1) {
+                        TASK2_set_borders(x0, x1, y0, y1);
+                        break;
+                    } else {
+                        printf("Left border should be less than right\n");
+                    }
                 } else if (custom == 'n') {
                     break;
                 } else {
@@ -136,7 +139,42 @@ int main() {
             break;
 
         case '3':
-            // TASK3_run(4);
+            printf("Enter number of threads\n");
+            while (1) {
+                printf("Threads = ");
+                scanf("%d", &n_threads);
+                getchar();
+
+                if (n_threads <= 0) {
+                    printf("Number of threads must be greater than 0\n");
+                } else {
+                    break;
+                }
+            }
+
+            while (1) {
+                printf("Enter the initial number of points in list and total number of operations\n");
+                scanf("%d %d", &inserts_in_main, &total_ops);
+                getchar();
+                printf("Enter search percent and insert percent, both numbers are in [0, 1]\n");
+                scanf("%lf %lf", &search_percent, &insert_percent);
+                getchar();
+
+                if (inserts_in_main < 0 || total_ops < 0 || search_percent < 0 || insert_percent < 0 || search_percent >
+                    1 || insert_percent > 1) {
+                    printf("Incorrect data\n");
+                } else {
+                    break;
+                }
+            }
+            out const TASK3_data = TASK3_run(n_threads, inserts_in_main, total_ops, search_percent, insert_percent);
+            printf("Elapsed time for example = %e sec.\n", TASK3_data.time_example);
+            printf("Elapsed time for our realisation = %e sec.\n", TASK3_data.time_my);
+            if (TASK3_data.is_equal == 1) {
+                printf("Lists are equal.\n");
+            } else {
+                printf("Oops, unluck.\n");
+            }
             break;
 
         case 'e':
