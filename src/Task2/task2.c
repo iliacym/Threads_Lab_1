@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "../utils/timer.h"
+
 // long double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705}; //star
 long double screen[4] = {-2, 1, -1, 1}; //default
 // long double screen[4] = {0.335590236, 0.335767595, -0.38698134, -0.38681068}; //sun 1000 +0.15
@@ -288,9 +290,20 @@ void* write_file(void *raw_data) {
     return NULL;
 }
 
-void TASK2_run(unsigned long long int const num_points,
-               unsigned long long int const batch_size,
-               int const num_threads) {
+void TASK2_set_iter(unsigned long long int const iter) {
+    TASK2_MAX_ITER = iter;
+}
+
+void TASK2_set_borders(long double const x0, long double const x1, long double const y0, long double const y1) {
+    screen[0] = x0;
+    screen[1] = x1;
+    screen[2] = y0;
+    screen[3] = y1;
+}
+
+double TASK2_run(unsigned long long int const num_points,
+                 unsigned long long int const batch_size,
+                 int const num_threads) {
 #   ifdef LINUX
     mkdir("results", 0777);
 #   else
@@ -316,11 +329,15 @@ void TASK2_run(unsigned long long int const num_points,
     fprintf(file, "%llu;%llu;%llu;%llu\n", num_points, PPX, PPY, batch_count * num_threads);
     fclose(file);
 
+
+    double start, finish, elapsed_time = 0;
+
     for (unsigned long long int i = 0; i < batch_count; ++i) {
         printf("Mandelbrot progress (Batch %llu of %llu):\n", i + 1, batch_count);
 
         CURR_STEP = 0;
 
+        GET_TIME(start)
         if (i != batch_count - 1) {
             get_points(points, &x_it, &y_it, &write_points, batch_size * (i + 1), num_points);
             MAX_STEP = batch_size;
@@ -345,8 +362,12 @@ void TASK2_run(unsigned long long int const num_points,
         pthread_create(&threads[num_threads], NULL, progress, NULL);
 
         for (int j = 0; j < num_threads; ++j) {
-            pthread_detach(threads[j]);
+            pthread_join(threads[j],NULL);
         }
+        GET_TIME(finish);
+
+        elapsed_time += finish - start;
+
         pthread_join(threads[num_threads], NULL);
         printf("Mandelbrot completed (Batch %llu of %llu):\n", i + 1, batch_count);
 
@@ -374,4 +395,6 @@ void TASK2_run(unsigned long long int const num_points,
     free(data);
     free(threads);
     delete_points(points);
+
+    return elapsed_time;
 }

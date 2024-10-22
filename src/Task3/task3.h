@@ -20,6 +20,6 @@ int TASK3_rwlock_wrlock(TASK3_rwlock_t *rwlock);
 
 int TASK3_rwlock_unlock(TASK3_rwlock_t *rwlock);
 
-double TASK3_run(int num_threads);
+double TASK3_run(int num_threads, int inserts_in_main_, int total_ops_, double search_percent_, double insert_percent_);
 
 #endif

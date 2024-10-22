@@ -117,7 +117,7 @@ def main():
 
     t.join()
 
-    cv2.imwrite('D:/123/png.png', image_np)
+    cv2.imwrite('png.png', image_np)
 
     shm.close()
     shm.unlink()

@@ -232,7 +232,7 @@ double TASK3_variant() {
 
 
 double TASK3_run(int const num_threads, int const inserts_in_main_, int const total_ops_, double const search_percent_,
-                 double insert_percent_) {
+                 double const insert_percent_) {
     inserts_in_main = inserts_in_main_, total_ops = total_ops_, thread_count = num_threads;
     search_percent = search_percent_, insert_percent = insert_percent_;
 
