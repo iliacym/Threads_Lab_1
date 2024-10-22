@@ -20,8 +20,6 @@ int TASK3_rwlock_wrlock(TASK3_rwlock_t *rwlock);
 
 int TASK3_rwlock_unlock(TASK3_rwlock_t *rwlock);
 
-int TASK3_run_rwlock(int const num_threads);
-
-int TASK3_run(int const num_threads);
+double TASK3_run(int num_threads);
 
 #endif

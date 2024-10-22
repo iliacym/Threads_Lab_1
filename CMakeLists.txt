@@ -11,14 +11,12 @@ add_executable(
         src/Task2/task2.h
         src/Task3/task3.c
         src/Task3/task3.h
-#        src/Task3/pth_ll_rwl.c
-        src/Task3/pth_ll_rwl_my_lock.c
+        src/utils/pth_ll_rwl.c
+        src/utils/pth_ll_rwl.h
         src/utils/my_rand.c
         src/utils/my_rand.h
         src/utils/timer.h
 )
-
-#add_definitions(-DOUTPUT)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_definitions(-DLINUX)
