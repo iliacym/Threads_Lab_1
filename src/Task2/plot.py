@@ -6,6 +6,7 @@ from multiprocessing import shared_memory
 import cv2
 import time
 import threading
+import ctypes
 
 
 @nb.njit(fastmath=True)
@@ -103,7 +104,7 @@ def main():
     shape = (*(size[::-1]), 3)
 
     shm = shared_memory.SharedMemory(create=True, size=int(np.prod(shape)) * np.dtype(np.uint8).itemsize)
-    global_progress_value = multiprocessing.Value('i', 0)
+    global_progress_value = multiprocessing.Value(ctypes.c_ulonglong, 0)
 
     image_np = np.ndarray(shape, dtype=np.uint8, buffer=shm.buf)
     lock = multiprocessing.Lock()
@@ -116,7 +117,7 @@ def main():
 
     t.join()
 
-    cv2.imwrite('../../res/png.png', image_np)
+    cv2.imwrite('D:/123/png.png', image_np)
 
     shm.close()
     shm.unlink()
