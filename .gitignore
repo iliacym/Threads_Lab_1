@@ -2,3 +2,5 @@
 !/.idea/cmake.xml
 /cmake-build-debug
 /cmake-build-release
+/cmake-build-debud-linux
+/big_pics
