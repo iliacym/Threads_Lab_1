@@ -1,4 +1,3 @@
-#include "task2.h"
 #include <stdlib.h>
 #include <math.h>
 #include <pthread.h>
@@ -6,11 +5,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/stat.h>
-
+#include "task2.h"
 #include "../utils/timer.h"
 
-// long double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705}; //star
 long double screen[4] = {-2, 1, -1, 1}; //default
+// long double screen[4] = {-0.811526786, -0.811520633, 0.1845268428, 0.1845318705}; //star
 // long double screen[4] = {0.335590236, 0.335767595, -0.38698134, -0.38681068}; //sun 1000 +0.15
 // long double screen[4] = {-0.8116076793, -0.8116060273, 0.18460990711, 0.18461113012}; //shima 1600
 // long double screen[4] = {-0.81405528322, -0.81405516201,  0.189598755165, 0.189598844697};//neuron 1600 +0.35
@@ -80,8 +79,7 @@ void get_points(TASK2_POINTS const *points,
                 unsigned long long int *write_points,
                 unsigned long long int const points_limit,
                 unsigned long long int const num_points) {
-    long double const wight = screen[1] - screen[0], height = screen[3] - screen[2], mid_x = screen[0], mid_y = screen[
-                          2];
+    long double const wight = screen[1] - screen[0], height = screen[3] - screen[2];
     unsigned long long int const ppx = (unsigned long long int)sqrtl(num_points * wight / height),
                                  ppy = (unsigned long long int)sqrtl(num_points * height / wight);
     long double const step_x = wight / (ppx - 1), step_y = height / (ppy - 1);
@@ -105,11 +103,6 @@ void get_points(TASK2_POINTS const *points,
         *y_it = 0;
         ++*x_it;
     }
-
-    // for (unsigned long long int j = i; j < points->num_points; ++j) {
-    //     points->points[j]->x = mid_x;
-    //     points->points[j]->y = mid_y;
-    // }
 }
 
 long double sqr(TASK2_POINT const *p) {

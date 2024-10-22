@@ -8,6 +8,9 @@ import time
 import threading
 import ctypes
 
+lock: multiprocessing.Lock
+progress_value: multiprocessing.Value
+
 
 @nb.njit(fastmath=True)
 def hsv_to_rgb(h):
@@ -107,12 +110,12 @@ def main():
     global_progress_value = multiprocessing.Value(ctypes.c_ulonglong, 0)
 
     image_np = np.ndarray(shape, dtype=np.uint8, buffer=shm.buf)
-    lock = multiprocessing.Lock()
+    lck = multiprocessing.Lock()
 
-    t = threading.Thread(target=print_progress, args=(lock, global_progress_value, num_points))
+    t = threading.Thread(target=print_progress, args=(lck, global_progress_value, num_points))
     t.start()
 
-    with multiprocessing.Pool(initargs=(lock, global_progress_value), initializer=init) as pool:
+    with multiprocessing.Pool(initargs=(lck, global_progress_value), initializer=init) as pool:
         pool.map(plot, [(i, *size, shm.name) for i in range(num_files)])
 
     t.join()

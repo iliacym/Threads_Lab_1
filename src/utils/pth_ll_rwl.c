@@ -10,10 +10,9 @@ list_node_s* create() {
 /*-----------------------------------------------------------------*/
 /* Insert value in correct numerical location into list */
 /* If value is not in list, return 1, else return 0 */
-int Insert(list_node_s **head, int value) {
-    struct list_node_s *curr = *head;
-    struct list_node_s *pred = NULL;
-    struct list_node_s *temp;
+int Insert(list_node_s **head, int const value) {
+    list_node_s *curr = *head;
+    list_node_s *pred = NULL;
     int rv = 1;
 
     while (curr != NULL && curr->data < value) {
@@ -22,7 +21,7 @@ int Insert(list_node_s **head, int value) {
     }
 
     if (curr == NULL || curr->data > value) {
-        temp = malloc(sizeof(struct list_node_s));
+        list_node_s *temp = malloc(sizeof(struct list_node_s));
         temp->data = value;
         temp->next = curr;
         if (pred == NULL)
@@ -38,10 +37,8 @@ int Insert(list_node_s **head, int value) {
 
 
 /*-----------------------------------------------------------------*/
-int Member(list_node_s **head,int value) {
-    struct list_node_s *temp;
-
-    temp = *head;
+int Member(list_node_s **head, int const value) {
+    list_node_s *temp = *head;
     while (temp != NULL && temp->data < value)
         temp = temp->next;
 
@@ -55,9 +52,9 @@ int Member(list_node_s **head,int value) {
 /*-----------------------------------------------------------------*/
 /* Deletes value from list */
 /* If value is in list, return 1, else return 0 */
-int Delete(list_node_s **head,int value) {
-    struct list_node_s *curr = *head;
-    struct list_node_s *pred = NULL;
+int Delete(list_node_s **head, int const value) {
+    list_node_s *curr = *head;
+    list_node_s *pred = NULL;
     int rv = 1;
 
     /* Find value */
@@ -83,13 +80,10 @@ int Delete(list_node_s **head,int value) {
 
 /*-----------------------------------------------------------------*/
 void Free_list(list_node_s **head) {
-    struct list_node_s *current;
-    struct list_node_s *following;
-
-    if (Is_empty(*head))
+    if (*head == NULL)
         return;
-    current = *head;
-    following = current->next;
+    list_node_s *current = *head;
+    list_node_s *following = current->next;
     while (following != NULL) {
         free(current);
         current = following;
@@ -98,10 +92,3 @@ void Free_list(list_node_s **head) {
     free(current);
 } /* Free_list */
 
-/*-----------------------------------------------------------------*/
-int Is_empty(list_node_s **head) {
-    if (*head == NULL)
-        return 1;
-    else
-        return 0;
-} /* Is_empty */

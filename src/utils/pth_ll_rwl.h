@@ -11,6 +11,5 @@ int Insert(list_node_s **head, int value);
 int Member(list_node_s **head, int value);
 int Delete(list_node_s **head, int value);
 void Free_list(list_node_s **head);
-int Is_empty(list_node_s **head);
 
 #endif
