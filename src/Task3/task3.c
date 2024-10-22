@@ -236,12 +236,12 @@ out TASK3_run(int const num_threads, int const inserts_in_main_, int const total
 
     check = 0;
     current_rwlock = &rwlock;
-    double const time_to_run = TASK3_variant(num_threads);
+    double const time_to_run = TASK3_variant();
     head2 = head1;
 
     check = 1;
     current_rwlock = &my_rwlock;
-    double const time_to_run_my = TASK3_variant(num_threads);
+    double const time_to_run_my = TASK3_variant();
 
 
     list_node_s *head1_copy = head1, *head2_copy = head2;
